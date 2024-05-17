@@ -228,38 +228,38 @@ class Dataset_Custom(Dataset):
         df_raw.columns: ['date', ...(other features), target feature]
         '''
         cols = list(df_raw.columns)
-        print("__read_data__")
-        print(f'self.set_type : {self.set_type}')
-        print(f'total : {len(df_raw)}')
-        print(cols)
+        #print("__read_data__")
+        #print(f'self.set_type : {self.set_type}')
+        #print(f'total : {len(df_raw)}')
+        #print(cols)
         if self.features == 'S':
             cols.remove(self.target)
         cols.remove('date')
-        print(cols)
+        #print(cols)
         # print(cols)
         num_train = int(len(df_raw) * (0.7 if not self.train_only else 1))
         num_test = int(len(df_raw) * 0.2)
         num_vali = len(df_raw) - num_train - num_test
-        print(f'num_train : {num_train}')
-        print(f'num_test  : {num_test}')
-        print(f'num_vali  : {num_vali}')
+        #print(f'num_train : {num_train}')
+        #print(f'num_test  : {num_test}')
+        #print(f'num_vali  : {num_vali}')
 
         border1s = [0, num_train - self.seq_len, len(df_raw) - num_test - self.seq_len]
         border2s = [num_train, num_train + num_vali, len(df_raw)]
-        print(f'border1s  : {border1s}')
-        print(f'border2s  : {border2s}')
+        #print(f'border1s  : {border1s}')
+        #print(f'border2s  : {border2s}')
         border1 = border1s[self.set_type]
         border2 = border2s[self.set_type]
-        print(f'border1  : {border1}')
-        print(f'border2  : {border2}')
+        #print(f'border1  : {border1}')
+        #print(f'border2  : {border2}')
 
         if self.features == 'M' or self.features == 'MS':
             df_raw = df_raw[['date'] + cols]
-            print(f'df_raw  : {df_raw}')
+            #print(f'df_raw  : {df_raw}')
             cols_data = df_raw.columns[1:]
-            print(f'cols_data  : {cols_data}')
+            #print(f'cols_data  : {cols_data}')
             df_data = df_raw[cols_data]
-            print(f'df_data  : {df_data}')
+            #print(f'df_data  : {df_data}')
         elif self.features == 'S':
             df_raw = df_raw[['date'] + cols + [self.target]]
             df_data = df_raw[[self.target]]
@@ -270,15 +270,15 @@ class Dataset_Custom(Dataset):
             # print(self.scaler.mean_)
             # exit()
             data = self.scaler.transform(df_data.values)
-            print(f'data  : {data}')
+            #print(f'data  : {data}')
         else:
             data = df_data.values
 
         df_stamp = df_raw[['date']][border1:border2]
-        print(f'df_stamp  : {df_stamp}')
+        #print(f'df_stamp  : {df_stamp}')
         df_stamp['date'] = pd.to_datetime(df_stamp.date)
-        print(f'df_stamp  : {df_stamp}')
-        print(f'timeenc  : {self.timeenc}')
+        #print(f'df_stamp  : {df_stamp}')
+        #print(f'timeenc  : {self.timeenc}')
         if self.timeenc == 0:
             df_stamp['month'] = df_stamp.date.apply(lambda row: row.month, 1)
             df_stamp['day'] = df_stamp.date.apply(lambda row: row.day, 1)
@@ -287,11 +287,11 @@ class Dataset_Custom(Dataset):
             data_stamp = df_stamp.drop(['date'], 1).values
         elif self.timeenc == 1:
             a = pd.to_datetime(df_stamp['date'].values)
-            print(f'df_stamp  : {a}')
+            #print(f'df_stamp  : {a}')
             data_stamp = time_features(pd.to_datetime(df_stamp['date'].values), freq=self.freq)
-            print(f'data_stamp  : {data_stamp}')
+            #print(f'data_stamp  : {data_stamp}')
             data_stamp = data_stamp.transpose(1, 0)
-            print(f'data_stamp  : {data_stamp}')
+            #print(f'data_stamp  : {data_stamp}')
 
         self.data_x = data[border1:border2]
         self.data_y = data[border1:border2]
