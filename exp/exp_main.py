@@ -13,7 +13,6 @@ from exp.exp_basic              import  Exp_Basic
 from models                     import  DLinear, Linear, NLinear
 from utils.tools                import  EarlyStopping, adjust_learning_rate, visual, test_params_flop
 from utils.metrics              import  metric
-from exp.exp_util               import  print_update_inside_epochs,visual_test,paint_save_test
 from torch                      import optim
 
 warnings.filterwarnings('ignore')
@@ -76,7 +75,8 @@ class Exp_Main(Exp_Basic):
                 loss        = criterion(outputs, batch_y)
                 train_loss.append(loss.item())
                 #self.neptuneRun["train_loss"].append(loss.item())
-                print_update_inside_epochs(i,epoch,self.args.train_epochs,train_steps,loss,time_now,iter_count)
+                self.print_update_inside_epochs(i,epoch,self.args.train_epochs,train_steps,loss,time_now,iter_count)
+    
 
                 loss.backward()
                 model_optim.step()
@@ -130,7 +130,7 @@ class Exp_Main(Exp_Basic):
                 trues.append(true)
                 inputx.append(batch_x.detach().cpu().numpy())
 
-                visual_test(i,batch_x,true,pred,folder_path)
+                self.visual_test(i,batch_x,true,pred,folder_path)
 
 
         #if self.args.test_flop:test_params_flop((batch_x.shape[1],batch_x.shape[2]));exit()
@@ -141,7 +141,7 @@ class Exp_Main(Exp_Basic):
 
         folder_path = './results/' + setting + '/'
         if not os.path.exists(folder_path):os.makedirs(folder_path)
-        paint_save_test(preds,trues,setting,folder_path)
+        self.paint_save_test(preds,trues,setting,folder_path)
 
         return
 

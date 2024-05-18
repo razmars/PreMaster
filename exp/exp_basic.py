@@ -2,6 +2,10 @@ import os
 import torch
 import numpy as np
 import neptune
+import time
+from  utils.tools                import  EarlyStopping, adjust_learning_rate, visual, test_params_flop
+from  utils.metrics               import metric
+import matplotlib.pyplot as plt
 
 
 class Exp_Basic(object):
@@ -9,9 +13,9 @@ class Exp_Basic(object):
         self.args       = args
         self.device     = self._acquire_device()
         self.model      = self._build_model().to(self.device)
-        #self.neptuneRun = neptune.init_run(project='razmars/preMaster', api_token='eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiJjODBjZDM5NC03YzZmLTRhZDUtYWMwYS1jODA0NGE2YTM0MGIifQ==',
-                                           #name = "razos")
-        #self.setNeptune(args)
+        self.neptuneRun = neptune.init_run(project='razmars/preMaster', api_token='eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiJjODBjZDM5NC03YzZmLTRhZDUtYWMwYS1jODA0NGE2YTM0MGIifQ==',
+                                           name = "razos")
+        self.setNeptune(args)
     
     def _build_model(self):
         raise NotImplementedError
@@ -41,3 +45,46 @@ class Exp_Basic(object):
         self.neptuneRun["params/activation"]                 = args.activation
         self.neptuneRun["predict length"]                    = args.pred_len
         self.neptuneRun["seqencec length"]                   = args.seq_len
+
+
+    def paint_save_test(self,preds,trues,setting,folder_path):
+        mae, mse, rmse, mape, mspe, rse, corr = metric(preds, trues)
+        print('mse:{}, mae:{}'.format(mse, mae))
+        
+        with open("result.txt", 'a') as f:
+            f.write(setting + "  \n")
+            f.write('mse:{}, mae:{}, rse:{}, corr:{}'.format(mse, mae, rse, corr))
+            f.write('\n\n')
+
+        self.neptuneRun["results/mse"] = mse 
+        self.neptuneRun["results/mae"] = mae 
+        self.neptuneRun["results/rse"] = rse 
+        np.save(folder_path + 'pred.npy', preds)
+
+
+    def visual_test(self,i,batch_x,true,pred,folder_path):
+       if i % 20 == 0:
+        input = batch_x.detach().cpu().numpy()
+        gt    = np.concatenate((input[0, :, -1], true[0, :, -1]), axis=0)
+        pd    = np.concatenate((input[0, :, -1], pred[0, :, -1]), axis=0)
+        self.visual(gt, pd, os.path.join(folder_path, str(i) + '.pdf'))
+
+
+    def visual(self,true, preds=None, name='./pic/test.pdf'):
+        fig = plt.figure()
+        plt.plot(true, label='GroundTruth', linewidth=2)
+        if preds is not None:
+            plt.plot(preds, label='Prediction', linewidth=2)
+        plt.legend()
+        plt.savefig(name, bbox_inches='tight')
+        self.neptuneRun[f'visuals/{name}'].upload(fig)
+
+
+    def print_update_inside_epochs(self,i,epoch,train_epochs,train_steps,loss,time_now,iter_count):
+        if (i + 1) % 100 == 0:
+            print("\titers: {0}, epoch: {1} | loss: {2:.7f}".format(i + 1, epoch + 1, loss.item()))
+            speed      = (time.time() - time_now) / iter_count
+            left_time  = speed * ((train_epochs - epoch) * train_steps - i)
+            iter_count = 0
+            time_now   = time.time()
+            print('\tspeed: {:.4f}s/iter; left time: {:.4f}s'.format(speed, left_time))
