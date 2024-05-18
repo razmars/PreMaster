@@ -62,7 +62,7 @@ parser.add_argument('--embed', type=str, default='timeF',
                     help='time features encoding, options:[timeF, fixed, learned]')
 parser.add_argument('--activation', type=str, default='gelu', help='activation')
 parser.add_argument('--output_attention', action='store_true', help='whether to output attention in ecoder')
-parser.add_argument('--do_predict', action='store_true', help='whether to predict unseen future data')
+parser.add_argument('--do_predict', action='store_true',default=True, help='whether to predict unseen future data')
 
 
 # optimization
@@ -81,10 +81,11 @@ parser.add_argument('--use_amp', action='store_true', help='use automatic mixed 
 
 args = parser.parse_args()
 
-#print(args)
+
 
 print('Args in experiment:')
-#print(args)
+print(args)
+print(args.is_training)
 
 Exp = Exp_Main
 
@@ -110,19 +111,46 @@ if args.is_training:
             args.des, ii)
 
         exp = Exp(args)  # set experiments
-        #print('>>>>>>>start training : {}>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(setting))
-        train_data, train_loader = exp._get_data(flag='train')
-        saveAsExcelFile(train_data.data_x,"exchangeRatesData")
-
-
+        print('>>>>>>>start training : {}>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(setting))
         exp.train(setting)
 
         if not args.train_only:
-            #print('>>>>>>>testing : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
+            print('>>>>>>>testing : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
             exp.test(setting)
 
         if args.do_predict:
-            #print('>>>>>>>predicting : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
+            print('>>>>>>>predicting : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
             exp.predict(setting, True)
 
+        torch.cuda.empty_cache()
+
+else:
+    print("Im hereee")
+    ii = 0
+    setting = '{}_{}_{}_ft{}_sl{}_ll{}_pl{}_dm{}_nh{}_el{}_dl{}_df{}_fc{}_eb{}_dt{}_{}_{}'.format(args.model_id,
+                                                                                                  args.model,
+                                                                                                  args.data,
+                                                                                                  args.features,
+                                                                                                  args.seq_len,
+                                                                                                  args.label_len,
+                                                                                                  args.pred_len,
+                                                                                                  args.d_model,
+                                                                                                  args.n_heads,
+                                                                                                  args.e_layers,
+                                                                                                  args.d_layers,
+                                                                                                  args.d_ff,
+                                                                                                  args.factor,
+                                                                                                  args.embed,
+                                                                                                  args.distil,
+                                                                                                  args.des, ii)
+
+    exp = Exp(args)  # set experiments
+
+    if args.do_predict:
+        print('>>>>>>>predicting : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
+        exp.predict(setting, True)
+    else:
+        print('>>>>>>>testing : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
+        exp.test(setting, test=1)
+    torch.cuda.empty_cache()
 
