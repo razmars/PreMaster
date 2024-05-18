@@ -246,12 +246,9 @@ class Dataset_Custom(Dataset):
 
         border1s = [0, num_train - self.seq_len, len(df_raw) - num_test - self.seq_len]
         border2s = [num_train, num_train + num_vali, len(df_raw)]
-        #print(f'border1s  : {border1s}')
-        #print(f'border2s  : {border2s}')
         border1 = border1s[self.set_type]
         border2 = border2s[self.set_type]
-        #print(f'border1  : {border1}')
-        #print(f'border2  : {border2}')
+
 
         if self.features == 'M' or self.features == 'MS':
             df_raw = df_raw[['date'] + cols]
@@ -295,6 +292,8 @@ class Dataset_Custom(Dataset):
 
         self.data_x = data[border1:border2]
         self.data_y = data[border1:border2]
+        #print(f'self.data_x   : {self.data_x }')
+        #print(f'self.data_y  : {self.data_y}')
         self.data_stamp = data_stamp
 
     def __getitem__(self, index):
@@ -334,13 +333,13 @@ class Dataset_Pred(Dataset):
         # init
         assert flag in ['pred']
 
-        self.features = features
-        self.target = target
-        self.scale = scale
-        self.inverse = inverse
-        self.timeenc = timeenc
-        self.freq = freq
-        self.cols = cols
+        self.features  = features
+        self.target    = target
+        self.scale     = scale
+        self.inverse   = inverse
+        self.timeenc   = timeenc
+        self.freq      = freq
+        self.cols      = cols
         self.root_path = root_path
         self.data_path = data_path
         self.__read_data__()
@@ -423,4 +422,5 @@ class Dataset_Pred(Dataset):
         return len(self.data_x) - self.seq_len + 1
 
     def inverse_transform(self, data):
-        return self.scaler.inverse_transform(data)
+        print("razos")
+        return self.scaler.inverse_transform(data[0])
