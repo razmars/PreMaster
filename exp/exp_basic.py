@@ -39,12 +39,13 @@ class Exp_Basic(object):
 
     def setNeptune(self,args):
         self.neptuneRun['model']                             = args.model
-        self.neptuneRun['namespace/field_name']              = args.model_id
-        self.neptuneRun["params/optimization/learning_rate"] = args.learning_rate
-        self.neptuneRun["params/optimization/algorithm"]     = "Adam"
+        self.neptuneRun['name']                              = args.model_id
+        self.neptuneRun["params/batch size"]                 = args.batch_size
+        self.neptuneRun["params/learning rate"]              = args.learning_rate
+        self.neptuneRun["params/opt algo"]                   = "Adam"
         self.neptuneRun["params/activation"]                 = args.activation
-        self.neptuneRun["predict length"]                    = args.pred_len
-        self.neptuneRun["seqencec length"]                   = args.seq_len
+        self.neptuneRun["params/predict length"]                    = args.pred_len
+        self.neptuneRun["params/seqencec length"]                   = args.seq_len
 
 
     def paint_save_test(self,preds,trues,setting,folder_path):
@@ -63,21 +64,21 @@ class Exp_Basic(object):
 
 
     def visual_test(self,i,batch_x,true,pred,folder_path):
-       if i % 20 == 0:
-        input = batch_x.detach().cpu().numpy()
-        gt    = np.concatenate((input[0, :, -1], true[0, :, -1]), axis=0)
-        pd    = np.concatenate((input[0, :, -1], pred[0, :, -1]), axis=0)
-        self.visual(gt, pd, os.path.join(folder_path, str(i) + '.pdf'))
+        if i % 20 == 0:
+            input = batch_x.detach().cpu().numpy()
+            gt    = np.concatenate((input[0, :, -1], true[0, :, -1]), axis=0)
+            pd    = np.concatenate((input[0, :, -1], pred[0, :, -1]), axis=0)
+            self.visual(i,gt, pd, os.path.join(folder_path, str(i) + '.pdf'))
+        
 
+    def visual(self,i,true, preds=None, name='./pic/test.pdf'):
 
-    def visual(self,true, preds=None, name='./pic/test.pdf'):
-        fig = plt.figure()
-        plt.plot(true, label='GroundTruth', linewidth=2)
-        if preds is not None:
-            plt.plot(preds, label='Prediction', linewidth=2)
-        plt.legend()
-        plt.savefig(name, bbox_inches='tight')
-        self.neptuneRun[f'visuals/{name}'].upload(fig)
+        for pred in preds:
+            self.neptuneRun[f'Charts/predictions-{i}'].append(pred)
+
+        for val in true:
+            self.neptuneRun[f'Charts/TrueValue-{i}'].append(val)
+
 
 
     def print_update_inside_epochs(self,i,epoch,train_epochs,train_steps,loss,time_now,iter_count):
@@ -88,3 +89,10 @@ class Exp_Basic(object):
             iter_count = 0
             time_now   = time.time()
             print('\tspeed: {:.4f}s/iter; left time: {:.4f}s'.format(speed, left_time))
+
+    def updateNeptuneTrainLoss(self,loss):
+        self.neptuneRun["Charts/Train Loss"].append(loss)
+
+    def updateNeptuneTestLoss(self,loss):
+        self.neptuneRun["Charts/Test Loss"].append(loss)
+

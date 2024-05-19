@@ -28,8 +28,6 @@ class Exp_Main(Exp_Basic):
         return model
 
     def _get_data(self, flag):
-        print("args")
-        print(self.args)
         data_set, data_loader = data_provider(self.args, flag)
         return data_set, data_loader
 
@@ -74,17 +72,15 @@ class Exp_Main(Exp_Basic):
                 
                 loss        = criterion(outputs, batch_y)
                 train_loss.append(loss.item())
-                #self.neptuneRun["train_loss"].append(loss.item())
-                self.print_update_inside_epochs(i,epoch,self.args.train_epochs,train_steps,loss,time_now,iter_count)
+                self.updateNeptuneTrainLoss(loss.item())
+                #self.print_update_inside_epochs(i,epoch,self.args.train_epochs,train_steps,loss,time_now,iter_count)
     
-
                 loss.backward()
                 model_optim.step()
 
-
             train_loss = np.average(train_loss)
-            print("Epoch: {} cost time: {}".format(epoch + 1, time.time() - epoch_time))
-            print("Epoch: {0}, Steps: {1} | Train Loss: {2:.7f}".format(epoch + 1, train_steps, train_loss))
+            #print("Epoch: {} cost time: {}".format(epoch + 1, time.time() - epoch_time))
+            #print("Epoch: {0}, Steps: {1} | Train Loss: {2:.7f}".format(epoch + 1, train_steps, train_loss))
             early_stopping(train_loss, self.model, path)
             if early_stopping.early_stop: print("Early stopping"); break
 
@@ -100,6 +96,7 @@ class Exp_Main(Exp_Basic):
     def test(self, setting, test=0):
 
         test_data, test_loader = self._get_data(flag='test')
+        criterion              = self._select_criterion()
         preds                  = []
         trues                  = []
         inputx                 = [] 
@@ -129,11 +126,8 @@ class Exp_Main(Exp_Basic):
                 preds.append(pred)
                 trues.append(true)
                 inputx.append(batch_x.detach().cpu().numpy())
-
+                #self.updateNeptuneTestLoss(criterion(outputs, batch_y))
                 self.visual_test(i,batch_x,true,pred,folder_path)
-
-
-        #if self.args.test_flop:test_params_flop((batch_x.shape[1],batch_x.shape[2]));exit()
 
         preds  = np.concatenate(preds, axis=0)
         trues  = np.concatenate(trues, axis=0)
@@ -169,13 +163,12 @@ class Exp_Main(Exp_Basic):
 
         preds = np.array(preds)
         preds = np.concatenate(preds, axis=0)
-        print(f'preds: {preds}')
-        print(f'preds_data: {pred_data}')
+        #print(f'preds: {preds}')
+        #print(f'preds_data: {pred_data}')
         #print(f'pred_data size: {pred_data.size()}')
         if (pred_data.scale):
             preds = pred_data.inverse_transform(preds)
 
-        print(preds)
 
         folder_path = './results/' + setting + '/'
         if not os.path.exists(folder_path):os.makedirs(folder_path)
