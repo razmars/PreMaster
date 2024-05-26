@@ -7,7 +7,7 @@ import neptune
 import warnings
 import os
 import time
-
+import random
 from data_provider.data_factory import  data_provider
 from exp.exp_basic              import  Exp_Basic
 from models                     import  DLinear, Linear, NLinear
@@ -71,16 +71,17 @@ class Exp_Main(Exp_Basic):
                 batch_y     = batch_y[:, -self.args.pred_len:, f_dim:].to(self.device)
                 
                 loss        = criterion(outputs, batch_y)
+
                 train_loss.append(loss.item())
                 self.updateNeptuneTrainLoss(loss.item())
-                #self.print_update_inside_epochs(i,epoch,self.args.train_epochs,train_steps,loss,time_now,iter_count)
+                self.print_update_inside_epochs(i,epoch,self.args.train_epochs,train_steps,loss,time_now,iter_count)
     
                 loss.backward()
                 model_optim.step()
 
             train_loss = np.average(train_loss)
-            #print("Epoch: {} cost time: {}".format(epoch + 1, time.time() - epoch_time))
-            #print("Epoch: {0}, Steps: {1} | Train Loss: {2:.7f}".format(epoch + 1, train_steps, train_loss))
+            print("Epoch: {} cost time: {}".format(epoch + 1, time.time() - epoch_time))
+            print("Epoch: {0}, Steps: {1} | Train Loss: {2:.7f}".format(epoch + 1, train_steps, train_loss))
             early_stopping(train_loss, self.model, path)
             if early_stopping.early_stop: print("Early stopping"); break
 
@@ -89,6 +90,7 @@ class Exp_Main(Exp_Basic):
 
         best_model_path = path + '/' + 'checkpoint.pth'
         self.model.load_state_dict(torch.load(best_model_path))
+        self.neptuneLog.log_model("model")
 
         return self.model
 
@@ -101,9 +103,11 @@ class Exp_Main(Exp_Basic):
         trues                  = []
         inputx                 = [] 
         folder_path            = './test_results/' + setting + '/'
+        random.seed(1)
+        visualI                = random.randint(0, len(test_loader))
 
         if test:print('loading model');self.model.load_state_dict(torch.load(os.path.join('./checkpoints/' + setting, 'checkpoint.pth')))
-        if not os.path.exists(folder_path):os.makedirs(folder_path)
+        #if not os.path.exists(folder_path):os.makedirs(folder_path)
 
         self.model.eval()
 
@@ -126,8 +130,7 @@ class Exp_Main(Exp_Basic):
                 preds.append(pred)
                 trues.append(true)
                 inputx.append(batch_x.detach().cpu().numpy())
-                #self.updateNeptuneTestLoss(criterion(outputs, batch_y))
-                self.visual_test(i,batch_x,true,pred,folder_path)
+                self.visual_test2(i,batch_x,true,pred,folder_path,visualI)
 
         preds  = np.concatenate(preds, axis=0)
         trues  = np.concatenate(trues, axis=0)
@@ -136,9 +139,7 @@ class Exp_Main(Exp_Basic):
         folder_path = './results/' + setting + '/'
         if not os.path.exists(folder_path):os.makedirs(folder_path)
         self.paint_save_test(preds,trues,setting,folder_path)
-
         return
-
 
     def predict(self, setting, load=False):
 
@@ -163,19 +164,15 @@ class Exp_Main(Exp_Basic):
 
         preds = np.array(preds)
         preds = np.concatenate(preds, axis=0)
-        #print(f'preds: {preds}')
-        #print(f'preds_data: {pred_data}')
-        #print(f'pred_data size: {pred_data.size()}')
         if (pred_data.scale):
             preds = pred_data.inverse_transform(preds)
-
 
         folder_path = './results/' + setting + '/'
         if not os.path.exists(folder_path):os.makedirs(folder_path)
 
         np.save(folder_path + 'real_prediction.npy', preds)
         pd.DataFrame(np.append(np.transpose([pred_data.future_dates]), preds, axis=1), columns=pred_data.cols).to_csv(folder_path + 'real_prediction.csv', index=False)
-
+        self.neptuneRun["data/predictions"].upload(folder_path + 'real_prediction.csv')
         return
 
 
