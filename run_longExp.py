@@ -77,15 +77,16 @@ parser.add_argument('--loss', type=str, default='mse', help='loss function')
 parser.add_argument('--lradj', type=str, default='type1', help='adjust learning rate')
 parser.add_argument('--use_amp', action='store_true', help='use automatic mixed precision training', default=False)
 
+parser.add_argument('--clustering_labels', type=int, default=96, help='--clustering_labels length')
+parser.add_argument('--clustering_groups', type=int, nargs='+', default=[96], help='List of integers as clustering labels.')
+
 # GPU
 
 args = parser.parse_args()
 
-
-
 print('Args in experiment:')
 print(args)
-print(args.is_training)
+#print(args.is_training)
 
 Exp = Exp_Main
 
@@ -111,6 +112,7 @@ if args.is_training:
             args.des, ii)
 
         exp = Exp(args)  # set experiments
+
         print('>>>>>>>start training : {}>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(setting))
         exp.train(setting)
 
