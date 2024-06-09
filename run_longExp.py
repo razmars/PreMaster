@@ -79,6 +79,8 @@ parser.add_argument('--use_amp', action='store_true', help='use automatic mixed 
 
 parser.add_argument('--clustering_labels', type=int, default=96, help='--clustering_labels length')
 parser.add_argument('--clustering_groups', type=int, nargs='+', default=[96], help='List of integers as clustering labels.')
+parser.add_argument('--result_folder', type=str, default='results/', help='root path of the data file')
+parser.add_argument('--result_filename', type=str, default='results', help='data file')
 
 # GPU
 

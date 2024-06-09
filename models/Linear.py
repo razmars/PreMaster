@@ -21,7 +21,6 @@ class Model(nn.Module):
             self.clustering_groups = configs.clustering_groups
             for i in range(self.clustering_labels):
                 self.Linear.append(nn.Linear(self.seq_len,self.pred_len))
-                print(self.Linear[i].weight.shape)
         else:
             self.Linear        = nn.Linear(self.seq_len, self.pred_len)
         
@@ -33,20 +32,11 @@ class Model(nn.Module):
             #print (output.shape)
             for i in range(self.clustering_labels):
                 indices_of_i = [index for index, value in enumerate(self.clustering_groups) if value == i]
-                #print (x[:,:,i].shape)
-                #print(x.permute(0,2,1)[:,indices_of_i,:].shape)
-                #print (x[:,:,indices_of_i].shape)
-                #print(output[:,:,i].shape)
-                print(self.Linear[i](x.permute(0,2,1)[:,indices_of_i,:]).shape)
                 output[:,:,indices_of_i] = self.Linear[i](x.permute(0,2,1)[:,indices_of_i,:]).permute(0,2,1)
             x = output
        
         else:
-            print(self.Linear.weight.shape)
-            print(x.permute(0,2,1).shape)
-            print(self.Linear(x.permute(0,2,1)).shape)
             x = self.Linear(x.permute(0,2,1)).permute(0,2,1)
-            print(x.shape)
 
         return x
      # [Batch, Output length, Channel]
