@@ -20,7 +20,6 @@ warnings.filterwarnings('ignore')
 class Exp_Main(Exp_Basic):
     def __init__(self, args):
         super(Exp_Main, self).__init__(args)
-        
 
     def _build_model(self):
         model_dict = {'DLinear': DLinear,'NLinear': NLinear,'Linear': Linear}
@@ -136,9 +135,12 @@ class Exp_Main(Exp_Basic):
         trues  = np.concatenate(trues, axis=0)
         inputx = np.concatenate(inputx, axis=0)
 
-        folder_path = './results/' + setting + '/'
-        if not os.path.exists(folder_path):os.makedirs(folder_path)
-        self.paint_save_test(preds,trues,setting,folder_path)
+        folder_path_res  = 'results/' 
+        if not os.path.exists(folder_path_res):os.makedirs(folder_path_res)
+        folder_path_pred = './predictions/' + setting + '/'
+        if not os.path.exists(folder_path_pred):os.makedirs(folder_path_pred)
+
+        self.paint_save_test(preds,trues,setting,folder_path_res,folder_path_pred)
         return
 
     def predict(self, setting, load=False):
@@ -167,12 +169,13 @@ class Exp_Main(Exp_Basic):
         if (pred_data.scale):
             preds = pred_data.inverse_transform(preds)
 
-        folder_path = './results/' + setting + '/'
-        if not os.path.exists(folder_path):os.makedirs(folder_path)
 
-        np.save(folder_path + 'real_prediction.npy', preds)
-        pd.DataFrame(np.append(np.transpose([pred_data.future_dates]), preds, axis=1), columns=pred_data.cols).to_csv(folder_path + 'real_prediction.csv', index=False)
-        self.neptuneRun["data/predictions"].upload(folder_path + 'real_prediction.csv')
+        folder_path_pred = './predictions/' + setting + '/'
+        if not os.path.exists(folder_path_pred):os.makedirs(folder_path_pred)
+
+        np.save(folder_path_pred + 'real_prediction.npy', preds)
+        pd.DataFrame(np.append(np.transpose([pred_data.future_dates]), preds, axis=1), columns=pred_data.cols).to_csv(folder_path_pred + 'real_prediction.csv', index=False)
+        self.neptuneRun["data/predictions"].upload(folder_path_pred + 'real_prediction.csv')
         return
 
 

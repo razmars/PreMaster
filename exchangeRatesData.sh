@@ -7,11 +7,11 @@ if [ ! -d "./logs/LongForecasting" ]; then
 
 fi
 seq_len=336
-model_name=Linear
+model_name=DLinear
 for pred_len in 96 
 do
 python -u run_longExp.py \
-  --is_training 1 \
+  --is_training 0 \
   --root_path ./dataset/ \
   --data_path exchange_rate.csv \
   --model_id Exchange_$seq_len'_'$pred_len \
@@ -24,8 +24,9 @@ python -u run_longExp.py \
   --des 'Exp' \
   --clustering_labels 4\
   --clustering_groups 1 3 1 1 2 0 0 1\
+  --result_folder cluster_result\
+  --result_filename results_cluster\
   --itr 1 --batch_size 32 --learning_rate 0.0005 --individual >logs/LongForecasting/$model_name'_I_'exchange_$seq_len'_'$pred_len.log 
-
 done
 
 

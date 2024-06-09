@@ -21,6 +21,9 @@ MODELCOLUMN = {'Linear-MSE':'C','Linear-MAE':'D','NLinear-MSE':'E','NLinear-MAE'
 class Exp_Basic(object):
     def __init__(self, args):
         self.args       = args
+        print("Args:------------------------------")
+        print(args)
+
         self.device     = self._acquire_device()
         self.model      = self._build_model().to(self.device)
         self.neptuneRun = neptune.init_run(project='razmars/preMaster', api_token='eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiJjODBjZDM5NC03YzZmLTRhZDUtYWMwYS1jODA0NGE2YTM0MGIifQ==',
@@ -61,16 +64,20 @@ class Exp_Basic(object):
         self.neptuneRun["data/raw"].upload(os.path.join(args.root_path,args.data_path))
 
 
-    def paint_save_test(self,preds,trues,setting,folder_path):
+    def paint_save_test(self,preds,trues,setting,folder_path_res,folder_path_pred):
         mae, mse, rmse, mape, mspe, rse, corr = metric(preds, trues)
         print('mse:{}, mae:{}'.format(mse, mae))
-        self.updateResultsCSV(mse,mae)
+        self.updateResultsCSV(mse,mae,folder_path_res)
         self.neptuneRun["results/mse"] = mse 
         self.neptuneRun["results/mae"] = mae 
-        np.save(folder_path + 'pred.npy', preds)
+        np.save(folder_path_pred + 'pred.npy', preds)
 
-    def updateResultsCSV(self,mse,mae):
-        data                  = load_workbook(filename="results.xlsx")
+    def updateResultsCSV(self,mse,mae,folder_path_res):
+        filename_xlsx         = folder_path_res+ self.args.result_folder +'/'+ self.args.result_filename + '.xlsx'
+        print(filename_xlsx)
+        filename_csv          = folder_path_res+ self.args.result_folder +'/'+ self.args.result_filename + '.csv'
+        print(filename_csv)
+        data                  = load_workbook(filename=filename_xlsx)
         sheet                 = data.active
         row                   = DATAROW[self.args.model_id.split('_')[0]] + STEPROW[self.args.pred_len]
         colMSE                = MODELCOLUMN[self.args.model+'-MSE']
@@ -79,10 +86,10 @@ class Exp_Basic(object):
         celMAE                = str(colMAE)+str(row)
         sheet[celMSE]         = mse
         sheet[celMAE]         = mae
-        data.save(filename="results.xlsx")
-        data = pd.read_excel("results.xlsx")
-        data.to_csv("results.csv", index=False)
-        sample_df = pd.read_csv("results.csv")
+        data.save(filename=filename_xlsx)
+        data = pd.read_excel(filename_xlsx)
+        data.to_csv(filename_csv, index=False)
+        sample_df = pd.read_csv(filename_csv)
         self.neptuneRun["data/results"].upload(File.as_html(sample_df))
     
 
@@ -112,7 +119,6 @@ class Exp_Basic(object):
 
         for val in true:
             self.neptuneRun[f'Charts/GroundTrue-{i}'].append(val)
-
 
 
     def print_update_inside_epochs(self,i,epoch,train_epochs,train_steps,loss,time_now,iter_count):

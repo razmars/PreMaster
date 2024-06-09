@@ -48,8 +48,19 @@ class Model(nn.Module):
         kernel_size          = 25
         self.decompsition    = series_decomp(kernel_size)
 
-        self.Linear_Seasonal = nn.Linear(self.seq_len,self.pred_len)
-        self.Linear_Trend    = nn.Linear(self.seq_len,self.pred_len)
+        self.individual      = configs.individual
+        if self.individual:
+            self.Linear_Seasonal   = nn.ModuleList()
+            self.Linear_Trend      = nn.ModuleList()
+            self.clustering_labels = configs.clustering_labels
+            self.clustering_groups = configs.clustering_groups
+            for i in range(self.clustering_labels):
+                self.Linear_Seasonal.append(nn.Linear(self.seq_len,self.pred_len))
+                self.Linear_Trend.append(nn.Linear(self.seq_len,self.pred_len))
+
+        else:
+            self.Linear_Seasonal = nn.Linear(self.seq_len,self.pred_len)
+            self.Linear_Trend    = nn.Linear(self.seq_len,self.pred_len)
             
         # Use this two lines if you want to visualize the weights
         #self.Linear_Seasonal.weight = nn.Parameter((1/self.seq_len)*torch.ones([self.pred_len,self.seq_len]))
@@ -60,8 +71,19 @@ class Model(nn.Module):
         seasonal_init, trend_init = self.decompsition(x)
         seasonal_init, trend_init = seasonal_init.permute(0,2,1), trend_init.permute(0,2,1)
 
-        seasonal_output           = self.Linear_Seasonal(seasonal_init)
-        trend_output              = self.Linear_Trend(trend_init)
+        if self.individual:
+            seasonal_output = torch.zeros([seasonal_init.size(0),seasonal_init.size(1),self.pred_len],dtype=seasonal_init.dtype).to(seasonal_init.device)
+            trend_output = torch.zeros([trend_init.size(0),trend_init.size(1),self.pred_len],dtype=trend_init.dtype).to(trend_init.device)
 
-        x                         = seasonal_output + trend_output
+            for i in range(self.clustering_labels):
+                indices_of_i = [index for index, value in enumerate(self.clustering_groups) if value == i]
+                seasonal_output[:,indices_of_i,:] = self.Linear_Seasonal[i](seasonal_init[:,indices_of_i,:])
+                trend_output[:,indices_of_i,:]    = self.Linear_Trend[i](trend_init[:,indices_of_i,:])
+
+        else:
+            seasonal_output           = self.Linear_Seasonal(seasonal_init)
+            trend_output              = self.Linear_Trend(trend_init)
+
+
+        x = seasonal_output + trend_output
         return x.permute(0,2,1) # to [Batch, Output length, Channel]
